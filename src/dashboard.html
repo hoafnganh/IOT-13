@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/css/fonts.css">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <link rel="stylesheet" href="./assets/css/dashboard.css">
+    <title>Dashboard - Hệ thống IoT</title>
+</head>
+<body>
+    <div class="wrap-all">
+
+        <!-- ================= SIDEBAR ================= -->
+        <aside id="sidebar">
+            <header class="header-sidebar">
+                <span>Sensor monitor</span>
+            </header>
+
+            <nav class="nav-content">
+                <button class="nav-btn active" data-page="0">Dashboard</button>
+                <button class="nav-btn" data-page="1">Data Sensor</button>
+                <button class="nav-btn" data-page="2">Action History</button>
+                <button class="nav-btn" data-page="3">Profile</button>
+            </nav>
+
+            <footer class="footer-sidebar">
+                <div class="user-small">
+                    <div class="avatar">D</div>
+                    <div class="user">
+                        <b>Dương Hoàng Anh</b>
+                        <span>B23DCAT007</span>
+                    </div>
+                </div>
+                <button class="logout-btn">Đăng xuất</button>
+            </footer>
+        </aside>
+
+        <!-- ================= CONTENT ================= -->
+        <div class="content">
+
+            <header class="topbar">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p>Dữ liệu cảm biến và trạng thái thiết bị theo thời gian thực</p>
+                </div>
+                <div class="system-online is-online">
+                    <span class="status-dot"></span>
+                    <span id="espStatusText">Đang kiểm tra ESP8266...</span>
+                </div>
+            </header>
+
+            <main class="dashboard-main">
+
+                <!-- 3 the cam bien -->
+                <section class="sensor-summary">
+                    <article class="sensor-card temperature-card">
+                        <div class="sensor-card-header">
+                            <span>Nhiệt độ</span>
+                            <div class="sensor-icon temperature-icon">♨</div>
+                        </div>
+                        <div class="sensor-value">
+                            <strong id="temperatureValue">--</strong>
+                            <span>°C</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar temperature-progress" id="temperatureBar"></div>
+                        </div>
+                        <div class="sensor-footer">
+                            <span>Mức hiện tại</span>
+                            <span id="temperatureTime">--</span>
+                        </div>
+                    </article>
+
+                    <article class="sensor-card humidity-card">
+                        <div class="sensor-card-header">
+                            <span>Độ ẩm</span>
+                            <div class="sensor-icon humidity-icon">▥</div>
+                        </div>
+                        <div class="sensor-value">
+                            <strong id="humidityValue">--</strong>
+                            <span>%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar humidity-progress" id="humidityBar"></div>
+                        </div>
+                        <div class="sensor-footer">
+                            <span>Mức hiện tại</span>
+                            <span id="humidityTime">--</span>
+                        </div>
+                    </article>
+
+                    <article class="sensor-card light-card">
+                        <div class="sensor-card-header">
+                            <span>Ánh sáng</span>
+                            <div class="sensor-icon light-icon">☀</div>
+                        </div>
+                        <div class="sensor-value">
+                            <strong id="lightValue">--</strong>
+                            <span>lux</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar light-progress" id="lightBar"></div>
+                        </div>
+                        <div class="sensor-footer">
+                            <span>Mức hiện tại</span>
+                            <span id="lightTime">--</span>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- Bieu do + node IoT -->
+                <section class="overview-grid">
+                    <article class="panel sensor-chart-card">
+                        <div class="panel-header">
+                            <div>
+                                <h2>Biểu đồ cảm biến</h2>
+                                <p>30 phút gần nhất</p>
+                            </div>
+                            <select id="sensorFilter">
+                                <option value="all">Tất cả cảm biến</option>
+                                <option value="temperature">Nhiệt độ</option>
+                                <option value="humidity">Độ ẩm</option>
+                                <option value="light">Ánh sáng</option>
+                            </select>
+                        </div>
+
+                        <div class="chart-container">
+                            <canvas id="sensorChart"></canvas>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- Dieu khien thiet bi: chi con 2 the LED + switch bat/tat tai cho -->
+                <section class="panel device-section">
+                    <div class="device-section-header">
+                        <h2>Điều khiển thiết bị</h2>
+                    </div>
+
+                    <div class="device-grid">
+                        <article class="device-card" data-device-id="esp01:led1">
+                            <div class="device-card-top">
+                                <div>
+                                    <h3>LED 1</h3>
+                                    <p>esp01:led1 · GPIO D1</p>
+                                </div>
+                                <span class="badge badge-online">ONLINE</span>
+                            </div>
+                            <div class="device-bottom">
+                                <div>
+                                    <span>Trạng thái</span>
+                                    <strong>OFF</strong>
+                                </div>
+                                <button class="switch" type="button" aria-pressed="false" data-action="toggle-device">
+                                    <span></span>
+                                </button>
+                            </div>
+                        </article>
+
+                        <article class="device-card" data-device-id="esp01:led2">
+                            <div class="device-card-top">
+                                <div>
+                                    <h3>LED 2</h3>
+                                    <p>esp01:led2 · GPIO D4</p>
+                                </div>
+                                <span class="badge badge-online">ONLINE</span>
+                            </div>
+                            <div class="device-bottom">
+                                <div>
+                                    <span>Trạng thái</span>
+                                    <strong>OFF</strong>
+                                </div>
+                                <button class="switch" type="button" aria-pressed="false" data-action="toggle-device">
+                                    <span></span>
+                                </button>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+                <!-- Trang thai he thong -->
+                <!-- <section class="system-status panel">
+                    <div>
+                        <strong>✓ Hệ thống hoạt động bình thường</strong>
+                        <p>Telemetry mới nhất đã được nhận từ ESP8266-01.</p>
+                    </div>
+                    <span>Cập nhật lúc <span id="systemUpdatedAt">--</span></span>
+                </section> -->
+
+            </main>
+        </div>
+
+    </div>
+</body>
+<script src="./assets/js/core.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="./assets/js/dashboard.js"></script>
+</html>

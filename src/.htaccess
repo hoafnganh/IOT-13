@@ -1,0 +1,16 @@
+# Chan truy cap HTTP vao thu muc chi danh cho CLI
+RewriteEngine On
+RewriteRule ^(worker|tools|api/lib|api/routes)/ - [F,L]
+
+# API /api/v1/* -> api/router.php (giu nguyen query string)
+RewriteRule ^api/v1/(.*)$ api/router.php?_route=$1 [QSA,L]
+RewriteRule ^api/(.*)$ api/router.php?_route=$1 [QSA,L]
+
+DirectoryIndex index.html index.php
+
+# Khi sua ma nguon, trinh duyet phai lay ban moi ngay (revalidate)
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|css|js)$">
+        Header set Cache-Control "no-cache, must-revalidate"
+    </FilesMatch>
+</IfModule>

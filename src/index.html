@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/css/fonts.css">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <link rel="stylesheet" href="./assets/css/login.css">
+    <title>Đăng nhập - Hệ thống IoT</title>
+</head>
+<body>
+    <div class="wrap-all login-split">
+
+        <!-- Panel thuong hieu ben trai -->
+        <aside class="login-brand">
+            <div class="login-brand-inner">
+                <div class="brand-text">
+                    <span class="brand-name-vi">Học viện Công nghệ Bưu chính Viễn thông</span>
+                    <span class="brand-name-en">Posts and Telecommunications Institute of Technology</span>
+                </div>
+            </div>
+
+            <div class="login-brand-caption">
+                <strong>Hệ thống IoT giám sát và điều khiển</strong>
+            </div>
+        </aside>
+
+        <!-- Form dang nhap -->
+        <main class="login-panel">
+            <form class="login-form" novalidate>
+                <header class="login-header">
+                    <div class="login-header-text">
+                        <h1>Đăng nhập</h1>
+                    </div>
+                </header>
+
+                <div class="form-group w-90">
+                    <label for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" placeholder="nhập tên đăng nhập" required
+                           autocomplete="username" class="pd-10 h-40 mg-top input-form">
+                </div>
+
+                <div class="form-group w-90">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" id="password" placeholder="nhập mật khẩu" required
+                           autocomplete="current-password" class="pd-10 h-40 mg-top input-form">
+                </div>
+
+                <button type="submit" class="submit-btn input-form">Đăng nhập</button>
+
+                <div class="false-status" role="alert"></div>
+            </form>
+        </main>
+
+    </div>
+</body>
+<script src="./assets/js/core.js"></script>
+</html>
