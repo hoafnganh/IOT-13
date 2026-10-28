@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tài liệu API - Hệ thống IoT</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23cc0d00'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css">
+  <style>
+    body { margin: 0; background: #fafafa; }
+    .topbar { display: none; }
+    #banner {
+      font-family: "Inter", system-ui, sans-serif; background: #cc0d00; color: #fff;
+      padding: 14px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    #banner b { font-size: 17px; letter-spacing: -.2px; }
+    #banner span { opacity: .85; font-size: 13px; }
+    #banner .spacer { flex: 1; }
+    #banner a { color: #fff; font-size: 13px; text-decoration: underline; opacity: .95; }
+    .swagger-ui .info .title { color: #1e293b; }
+  </style>
+</head>
+<body>
+  <div id="banner">
+    <b>Hệ thống đo cảm biến và điều khiển LED bằng MQTT</b>
+    <span>INT14149 - IoT và Ứng dụng · REST API /api/v1</span>
+    <div class="spacer"></div>
+    <a href="../dashboard.html">Về web app</a>
+  </div>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js" crossorigin></script>
+  <script>
+    window.onload = () => {
+      window.ui = SwaggerUIBundle({
+        url: "./openapi.json",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        docExpansion: "list",
+        defaultModelsExpandDepth: 0,
+        tryItOutEnabled: true,
+        persistAuthorization: true,
+        presets: [SwaggerUIBundle.presets.apis]
+      });
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/css/fonts.css">
+    <link rel="stylesheet" href="./assets/css/common.css">
+    <link rel="stylesheet" href="./assets/css/dashboard.css">
+    <link rel="stylesheet" href="./assets/css/table.css">
+    <title>Data Sensor - Hệ thống IoT</title>
+</head>
+<body>
+    <div class="wrap-all">
+
+        <!-- ================= SIDEBAR ================= -->
+        <aside id="sidebar">
+            <header class="header-sidebar">
+                <span>Sensor monitor</span>
+            </header>
+
+            <nav class="nav-content">
+                <button class="nav-btn" data-page="0">Dashboard</button>
+                <button class="nav-btn active" data-page="1">Data Sensor</button>
+                <button class="nav-btn" data-page="2">Action History</button>
+                <button class="nav-btn" data-page="3">Profile</button>
+            </nav>
+
+            <footer class="footer-sidebar">
+                <div class="user-small">
+                    <div class="avatar">D</div>
+                    <div class="user">
+                        <b>Dương Hoàng Anh</b>
+                        <span>B23DCAT007</span>
+                    </div>
+                </div>
+                <button class="logout-btn">Đăng xuất</button>
+            </footer>
+        </aside>
+
+        <!-- ================= CONTENT ================= -->
+        <div class="content">
+
+            <header class="topbar">
+                <div>
+                    <h1>Data Sensor</h1>
+                    <p>Tra cứu và lọc lịch sử dữ liệu cảm biến</p>
+                </div>
+                <div class="system-online is-online">
+                    <span class="status-dot"></span>
+                    <span id="espStatusText">Đang kiểm tra ESP8266...</span>
+                </div>
+            </header>
+
+            <main class="table-page">
+
+                <!-- Bo loc: chon loai -> hien thanh tim kiem;
+                     loai cam bien chi nhan so/toan tu, Thoi gian nhan chuoi -->
+                <section class="filter-panel">
+                    <div class="filter-item">
+                        <label for="nodeFilter">Loại tra cứu</label>
+                        <select id="nodeFilter">
+                            <option value="">Chọn loại tra cứu</option>
+                            <option value="temperature">Nhiệt độ</option>
+                            <option value="humidity">Độ ẩm</option>
+                            <option value="light">Ánh sáng</option>
+                            <option value="time">Thời gian</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-item search-item" id="searchItem" style="display: none;">
+                        <label for="typeSearch" id="typeSearchLabel">Giá trị</label>
+                        <input type="text" id="typeSearch" autocomplete="off"
+                               placeholder="VD: 15 hoặc >15, <20, >=15.5">
+                        <span class="search-hint" id="searchHint"></span>
+                    </div>
+
+                    <div class="filter-buttons">
+                        <button type="button" class="reset-btn">Đặt lại</button>
+                    </div>
+                </section>
+
+                <!-- Bang du lieu -->
+                <section class="data-table-card">
+                    <header class="table-header">
+                        <h2>Dữ liệu cảm biến</h2>
+                        <span>Cập nhật gần nhất: <span id="lastUpdate">--</span></span>
+                    </header>
+
+                    <div class="table-content">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Sensor ID</th>
+                                    <th>Tên cảm biến</th>
+                                    <th>Giá trị</th>
+                                    <th>Đơn vị</th>
+                                    <th>Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <footer class="table-footer">
+                        <div class="record-limit">
+                            <span>Hiển thị</span>
+                            <select id="recordLimit">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                            <span>bản ghi</span>
+                        </div>
+                        <nav class="pagination" id="pagination"></nav>
+                    </footer>
+                </section>
+
+            </main>
+        </div>
+
+    </div>
+</body>
+<script src="./assets/js/core.js"></script>
+<script src="./assets/js/table-render.js"></script>
+<script src="./assets/js/sensor-data.js"></script>
+</html>

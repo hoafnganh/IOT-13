@@ -1,0 +1,394 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "IOT-13 API - Sensor Monitor",
+    "description": "REST API hệ thống **đo cảm biến và điều khiển LED bằng MQTT** (INT14149 - IoT và Ứng dụng).\n\n## Xác thực\nWeb dùng **session PHP qua cookie `IOTSESSID`** (không phải token).\n1. Gọi `POST /api/v1/auth/login` — response kèm `Set-Cookie: IOTSESSID=...`\n2. Các request sau gửi kèm cookie này (trên Swagger bấm nút **Authorize** dán sẵn cookie, hoặc dùng curl `--cookie`).\n\n## Tài khoản mẫu\n| Username | Password |\n|---|---|\n| admin | admin123@ |\n| anhdh | 2507 |\n\n## Mã lỗi hay gặp\n401 chưa đăng nhập/sai tài khoản · 404 không tìm thấy thiết bị/action · 409 ESP8266 offline · 422 tham số sai · 502 mất kết nối MQTT broker.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:8080", "description": "Docker compose local" }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Đăng nhập session PHP" },
+    { "name": "Profile", "description": "Thông tin user + dự án" },
+    { "name": "Dashboard", "description": "Tổng quan + dữ liệu biểu đồ" },
+    { "name": "Sensor Data", "description": "Bảng dữ liệu cảm biến" },
+    { "name": "Devices", "description": "Thiết bị + điều khiển LED" },
+    { "name": "Actions", "description": "Lịch sử thao tác" },
+    { "name": "Health", "description": "Kiểm tra MySQL + MQTT" }
+  ],
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Đăng nhập",
+        "description": "Tạo session PHP, response set cookie `IOTSESSID`. Chạy request này trước mọi request khác.",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" },
+              "example": { "username": "admin", "password": "admin123@" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Đăng nhập thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "message": "Đăng nhập thành công",
+                  "data": { "user": { "id": 1, "username": "admin", "fullName": "Dương Hoàng Anh", "role": "admin", "email": null, "studentCode": "B23DCAT007" } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Thông tin user hiện tại",
+        "description": "Đọc lại user từ DB theo session (tên/MSSV mới tự cập nhật không cần đăng nhập lại).",
+        "operationId": "me",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": { "user": { "id": 1, "username": "admin", "fullName": "Dương Hoàng Anh", "role": "admin", "studentCode": "B23DCAT007" } } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Đăng xuất",
+        "description": "Hủy session + cookie. Sau đó mọi request cần đăng nhập trả 401.",
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { "example": { "success": true, "message": "Đăng xuất thành công", "data": { "loggedOut": true } } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Thông tin cá nhân + dự án",
+        "description": "Dữ liệu trang Profile: `user` (kèm createdAt) và `project` (tên đồ án, học phần, giảng viên, phần cứng).",
+        "operationId": "getProfile",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "user": { "id": 1, "username": "admin", "fullName": "Dương Hoàng Anh", "role": "admin", "studentCode": "B23DCAT007", "createdAt": "2026-10-02T00:00:00.000Z" },
+                    "project": { "name": "Hệ thống đo cảm biến và điều khiển LED bằng MQTT", "course": "INT14149 - IoT và Ứng dụng", "instructor": "TS. Nguyễn Quốc Uy", "hardware": "ESP8266 NodeMCU, DHT11, quang trở, 2 LED" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/dashboard": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Tổng quan (giá trị mới nhất mỗi cảm biến)",
+        "description": "Mỗi cảm biến 1 bản ghi mới nhất (generic theo bảng `sensors`), kèm trạng thái node `esp01` và danh sách thiết bị.",
+        "operationId": "getDashboard",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": {
+                    "sensors": {
+                      "temperature": { "sensorCode": "esp01:temperature", "name": "Nhiệt độ", "type": "TEMPERATURE", "unit": "°C", "value": 27.4, "recordedAt": "2026-10-28T15:30:00.000Z" },
+                      "humidity": { "sensorCode": "esp01:humidity", "name": "Độ ẩm", "type": "HUMIDITY", "unit": "%", "value": 46, "recordedAt": "2026-10-28T15:30:00.000Z" },
+                      "light": { "sensorCode": "esp01:light", "name": "Ánh sáng", "type": "LIGHT", "unit": "lux", "value": 573, "recordedAt": "2026-10-28T15:30:00.000Z" }
+                    },
+                    "node": { "deviceCode": "esp01", "name": "ESP8266-01", "connectionStatus": "online", "lastSeen": "2026-10-28T15:29:58.000Z" },
+                    "devices": [
+                      { "id": 2, "deviceCode": "esp01:led1", "name": "LED 1", "type": "ACTUATOR", "gpio": "D1", "currentState": "ON", "connectionStatus": "online", "lastSeen": "2026-10-28T15:29:58.000Z" }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/dashboard/chart": {
+      "get": {
+        "tags": ["Dashboard"],
+        "summary": "Dữ liệu biểu đồ",
+        "description": "Chuỗi điểm `{t, v}` từng cảm biến trong X phút gần nhất, lấy mẫu đều từ cuối mảng, thời gian tăng dần.",
+        "operationId": "getChart",
+        "parameters": [
+          { "name": "minutes", "in": "query", "schema": { "type": "integer", "default": 30, "minimum": 5, "maximum": 240 }, "description": "Khoảng thời gian gần nhất (phút)" },
+          { "name": "points", "in": "query", "schema": { "type": "integer", "default": 90, "minimum": 20, "maximum": 300 }, "description": "Số điểm lấy mẫu tối đa mỗi chuỗi" }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": { "minutes": 30, "series": { "temperature": [{ "t": "2026-10-28T15:01:00.000Z", "v": 28.4 }], "humidity": [{ "t": "2026-10-28T15:01:00.000Z", "v": 61 }], "light": [{ "t": "2026-10-28T15:01:00.000Z", "v": 54 }] } } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/sensor-data": {
+      "get": {
+        "tags": ["Sensor Data"],
+        "summary": "Danh sách bản đo cảm biến (phân trang + lọc)",
+        "description": "Bảng **Data Sensor** phía web. `value` nhận số/toán tử: `15`, `=15`, `>15`, `<20`, `>=15.5`. `time` tìm chuỗi con trong thời gian (VD `2026-10-28 15`). `search` chuỗi LIKE mọi cột hoặc biểu thức số.",
+        "operationId": "getSensorData",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "name": "sensor", "in": "query", "schema": { "type": "string", "enum": ["temperature", "humidity", "light"] }, "description": "Lọc theo loại cảm biến" },
+          { "name": "value", "in": "query", "schema": { "type": "string", "example": ">27" }, "description": "Lọc theo giá trị: 15 | =15 | >15 | <20 | >=15.5" },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Tìm chuỗi trên mọi cột hoặc biểu thức số" },
+          { "name": "time", "in": "query", "schema": { "type": "string", "example": "2026-10-28 15" }, "description": "Chuỗi con trong thời gian (recorded_at)" },
+          { "name": "from", "in": "query", "schema": { "type": "string", "example": "2026-10-28 00:00:00" }, "description": "Từ thời điểm (YYYY-MM-DD HH:mm:ss)" },
+          { "name": "to", "in": "query", "schema": { "type": "string", "example": "2026-10-28 23:59:59" }, "description": "Đến thời điểm" }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    { "id": 63, "sensorId": "esp01:temperature", "sensorName": "Nhiệt độ", "type": "TEMPERATURE", "value": 27.4, "unit": "°C", "recordedAt": "2026-10-28T15:29:23.000Z" }
+                  ],
+                  "pagination": { "page": 1, "limit": 10, "totalItems": 63, "totalPages": 7 }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/api/v1/devices": {
+      "get": {
+        "tags": ["Devices"],
+        "summary": "Danh sách thiết bị",
+        "description": "Toàn bộ node + actuator, sắp xếp type DESC (ACTUATOR trước) rồi device_code ASC.",
+        "operationId": "getDevices",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    { "id": 1, "deviceCode": "esp01", "name": "ESP8266-01", "type": "NODE", "gpio": null, "currentState": "UNKNOWN", "connectionStatus": "online", "lastSeen": "2026-10-28T15:29:58.000Z" },
+                    { "id": 2, "deviceCode": "esp01:led1", "name": "LED 1", "type": "ACTUATOR", "gpio": "D1", "currentState": "ON", "connectionStatus": "online", "lastSeen": "2026-10-28T15:29:58.000Z" },
+                    { "id": 3, "deviceCode": "esp01:led2", "name": "LED 2", "type": "ACTUATOR", "gpio": "D4", "currentState": "OFF", "connectionStatus": "online", "lastSeen": "2026-10-28T15:29:58.000Z" }
+                  ]
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/devices/{id}": {
+      "get": {
+        "tags": ["Devices"],
+        "summary": "Chi tiết thiết bị",
+        "description": "`id` nhận **số id** (1, 2...) hoặc **device_code** (`esp01`, `esp01:led1`, `esp01:led2`).",
+        "operationId": "getDevice",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "esp01:led1" }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": { "id": 2, "deviceCode": "esp01:led1", "name": "LED 1", "type": "ACTUATOR", "gpio": "D1", "currentState": "ON", "connectionStatus": "online", "lastSeen": "2026-10-28T15:29:58.000Z" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/devices/{id}/actions": {
+      "post": {
+        "tags": ["Devices"],
+        "summary": "Gửi lệnh ON/OFF cho LED",
+        "description": "Điều khiển LED: server ghi action PENDING + publish lệnh MQTT (cả 2 topic `iot/esp01/led/status` và bản cũ `iot/esp01/led`) rồi chờ ESP8266 phản hồi qua worker.\n\n- **202** ESP online, lệnh đang chờ phản hồi\n- **409** ESP8266 offline (lệnh ghi vào lịch sử với status FAILED)\n- **400** thiết bị không phải ACTUATOR · **422** action khác ON/OFF · **502** mất kết nối MQTT broker\n\nBí danh `/commands` với body `{\"state\":\"ON\"}` cùng chức năng.",
+        "operationId": "controlDevice",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "esp01:led1" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["action"], "properties": { "action": { "type": "string", "enum": ["ON", "OFF"] } } },
+              "example": { "action": "ON" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Đã nhận lệnh, chờ ESP8266 phản hồi",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "Đã nhận lệnh ON, đang chờ ESP8266 phản hồi", "data": { "actionId": 29, "requestId": "req-05a3f2", "deviceCode": "esp01:led1", "action": "ON", "status": "PENDING" } }
+              }
+            }
+          },
+          "400": { "description": "Thiết bị không hỗ trợ điều khiển ON/OFF" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "ESP8266 đang offline, không thể điều khiển" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "502": { "description": "Không kết nối được MQTT broker" }
+        }
+      }
+    },
+    "/api/v1/actions": {
+      "get": {
+        "tags": ["Actions"],
+        "summary": "Lịch sử thao tác (phân trang + lọc)",
+        "description": "Bảng **Action History** phía web. `device` nhận id số hoặc chuỗi khớp device_code/tên. `status`: PENDING | SUCCESS | FAILED | TIMEOUT.",
+        "operationId": "getActions",
+        "parameters": [
+          { "$ref": "#/components/parameters/Page" },
+          { "$ref": "#/components/parameters/Limit" },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Chuỗi LIKE mọi cột: #ID, requestId, thiết bị, action, status, độ trễ, message" },
+          { "name": "device", "in": "query", "schema": { "type": "string", "example": "LED 1" }, "description": "ID thiết bị (số) hoặc chuỗi khớp tên/device_code" },
+          { "name": "action", "in": "query", "schema": { "type": "string", "enum": ["ON", "OFF", "BLINK"] }, "description": "Loại lệnh" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["PENDING", "SUCCESS", "FAILED", "TIMEOUT"] }, "description": "Trạng thái" },
+          { "name": "time", "in": "query", "schema": { "type": "string", "example": "20:15" }, "description": "Chuỗi con trong thời gian gửi/phản hồi" },
+          { "name": "from", "in": "query", "schema": { "type": "string" }, "description": "Từ thời điểm (requested_at >= from)" },
+          { "name": "to", "in": "query", "schema": { "type": "string" }, "description": "Đến thời điểm (requested_at <= to)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    { "id": 28, "requestId": "req-05a3f2", "deviceId": "esp01:led1", "deviceName": "LED 1", "action": "ON", "status": "SUCCESS", "user": "admin", "requestedAt": "2026-10-28T15:10:02.000Z", "respondedAt": "2026-10-28T15:10:02.037Z", "latencyMs": 37, "message": null }
+                  ],
+                  "pagination": { "page": 1, "limit": 10, "totalItems": 28, "totalPages": 3 }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+    "/api/v1/actions/{id}": {
+      "get": {
+        "tags": ["Actions"],
+        "summary": "Chi tiết một lệnh",
+        "description": "Xem 1 dòng lịch sử theo id.",
+        "operationId": "getAction",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "integer" }, "example": 28 }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "data": { "id": 28, "requestId": "req-05a3f2", "deviceId": "esp01:led1", "deviceName": "LED 1", "action": "ON", "status": "SUCCESS", "user": "admin", "requestedAt": "2026-10-28T15:10:02.000Z", "respondedAt": "2026-10-28T15:10:02.037Z", "latencyMs": 37, "message": null } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Kiểm tra MySQL + MQTT broker",
+        "description": "Không cần đăng nhập. Kiểm tra nhanh cả stack.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { "example": { "success": true, "data": { "database": "up", "mqtt": "up", "mqttError": null } } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "sessionCookie": { "type": "apiKey", "in": "cookie", "name": "IOTSESSID", "description": "Session PHP do POST /auth/login cấp" }
+    },
+    "parameters": {
+      "Page": { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1, "minimum": 1 }, "description": "Trang (từ 1)" },
+      "Limit": { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10, "minimum": 1, "maximum": 100 }, "description": "Số dòng/trang" }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Chưa đăng nhập / sai tài khoản",
+        "content": { "application/json": { "example": { "success": false, "message": "Chua dang nhap" } } }
+      },
+      "NotFound": {
+        "description": "Không tìm thấy",
+        "content": { "application/json": { "example": { "success": false, "message": "Khong tim thay thiet bi" } } }
+      },
+      "ValidationError": {
+        "description": "Tham số không hợp lệ",
+        "content": { "application/json": { "example": { "success": false, "message": "Gia tri tim kiem khong hop le (VD: 15, >15, <20, >=15.5)" } } }
+      }
+    },
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string", "example": "admin" },
+          "password": { "type": "string", "example": "admin123@" }
+        }
+      }
+    }
+  },
+  "security": [{ "sessionCookie": [] }]
+}
